@@ -27,7 +27,12 @@ data/
     └── phase2_MDs_blind_eval/           # Maintained test labels & licensed physicians' independent computations of 50 sampled (C,q) instances
         ├── y_new_and_sampled_MD_evals.xlsx    # Juxtaposed original labels, recomputed labels, and sampled physician labels
         └── y_final_MD_evals_incorporated.xlsx # Maintained test set labels, incorporating physician feedback
+
+scripts/
+└── reproduce_phase2_metrics.py       # Reproduces Table 3 (Phase 2 physician validation metrics)
 ```
+
+> **Note:** More reproduction scripts are being ported from Jupyter notebooks; check back for updates.
 
 ### Phase 1: Audit Pipeline
 Initial automated audit demonstrating scalable error detection using an agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding) to flag potential label divergences, with physician spot-checks to validate flagged instances. Results in `phase1/test_audit_pipeline_raw.jsonl` were collected from the Phase 1 pipeline in July 2025, using 5×1047=5235 API calls to the Gemini 2.5 Pro API endpoint for the language model backbone.
