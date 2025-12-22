@@ -6,9 +6,11 @@ Repository for the paper **"Scalably Enhancing the Clinical Validity of a Task B
 
 ## Overview
 
-This repository contains the data artifacts from our physician-in-the-loop validation and systematic relabeling of [MedCalc-Bench](https://openreview.net/pdf?id=VXohja0vrQ), a [benchmark](https://web.archive.org/web/20250905181753/https://github.com/ncbi-nlp/MedCalc-Bench) for evaluating LLMs on clinical score computation. We show that a non-trivial fraction of original labels diverge from physician judgment, and that training on revised labels yields meaningful performance difference in downstream RL alignment.
+This repository contains the data artifacts from a case study on scalable benchmark maintenance using [MedCalc-Bench](https://openreview.net/pdf?id=VXohja0vrQ), a [benchmark](https://web.archive.org/web/20250905181753/https://github.com/ncbi-nlp/MedCalc-Bench) for evaluating LLMs on clinical score computation. We demonstrate a physician-in-the-loop maintenance pipeline that combines agentic LLM verifiers with automated triage to concentrate scarce clinician attention on contentious instances.
 
-**Note:** Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025 but did not specify how they changed the data generation methodology; so it is not covered by our analysis.
+We do not position our relabeling as a replacement for the benchmark; instead, we use MedCalc-Bench as a case study to argue that LLM-assisted benchmarks in safety-critical domains must be treated as _living documents_ with transparent, repeatable, and systematic maintenance protocols. Our results show that a non-trivial fraction of original labels diverge from physician judgment, and that training on maintained labels yields meaningful performance differences in downstream RL alignment.
+
+**Note:** Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was released by the benchmark creators in November 2025. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent revision methodology and routine re-auditing, rather than to claim priority over any particular correction.
 
 ## Repository Structure
 
@@ -19,19 +21,19 @@ data/
 │   └── phase1_MD_check/             
 │       └── test_spotcheck.xlsx       # Physician spot-check annotations
 │
-└── phase2/                           # Extensive relabeling experiments
-    ├── train_relabel_pipeline_raw.jsonl # New labels produced by another agentic LLM pipeline
-    ├── test_relabel_pipeline_raw.jsonl  # New labels produced by another agentic LLM pipeline
-    └── phase2_MDs_blind_eval/           # Parsed new test labels & licensed physicians' indepedent computations of 50 sampled (C,q) instances in MedCalc's test set
-        ├── y_new_and_sampled_MD_evals.xlsx    # juxtaposed old new labels, new labels, and sampled, independent physician labels
-        └── y_final_MD_evals_incorporated.xlsx # Final test set labels, incorporating physician feedback
+└── phase2/                           # Maintenance pipeline case study
+    ├── train_y_new_pipeline_raw.jsonl   # Recomputed labels from agentic LLM pipeline
+    ├── test_y_new_pipeline_raw.jsonl    # Recomputed labels from agentic LLM pipeline
+    └── phase2_MDs_blind_eval/           # Maintained test labels & licensed physicians' independent computations of 50 sampled (C,q) instances
+        ├── y_new_and_sampled_MD_evals.xlsx    # Juxtaposed original labels, recomputed labels, and sampled physician labels
+        └── y_final_MD_evals_incorporated.xlsx # Maintained test set labels, incorporating physician feedback
 ```
 
 ### Phase 1: Audit Pipeline
-Initial automated audit using an agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding) to flag potential label errors in MedCalc-Bench, with physician spot-checks to validate flagged instances. Results in `phase1/test_audit_pipeline_raw.jsonl` were collected from the Phase 1 pipeline in July 2025, using 5x1047=5235 API calls to the Gemini 2.5 Pro API endpoint for the language model backbone.
+Initial automated audit demonstrating scalable error detection using an agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding) to flag potential label divergences, with physician spot-checks to validate flagged instances. Results in `phase1/test_audit_pipeline_raw.jsonl` were collected from the Phase 1 pipeline in July 2025, using 5×1047=5235 API calls to the Gemini 2.5 Pro API endpoint for the language model backbone.
 
-### Phase 2: Relabeling Pipeline
-Independent relabeling of train and test sets from scratch using another agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding + Python tool use) we set up, followed by systematic review of divergent cases to produce corrected labels by three licensed physicians. Results in `phase2/train_relabel_pipeline_raw.jsonl` and `phase2/test_relabel_pipeline_raw.jsonl` were collected from the Phase 2 pipeline in August 2025, also using Gemini API calls. Final test set labels in `phase2/y_final_MD_evals_incorporated.xlsx` were incorporated with physician feedback; we recommend using labels in the column `y_final` for downstream alignment experiments.
+### Phase 2: Maintenance Pipeline
+Independent recomputation of train and test sets using an agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding + Python tool use), followed by systematic clinician adjudication of divergent cases by three licensed physicians. This phase demonstrates the full maintenance workflow: agentic verification → conservative triage → clinician review. Results in `phase2/train_y_new_pipeline_raw.jsonl` and `phase2/test_y_new_pipeline_raw.jsonl` were collected from the Phase 2 pipeline in August 2025. Maintained test set labels in `phase2/y_final_MD_evals_incorporated.xlsx` incorporate physician feedback; we recommend using labels in the column `y_final` for downstream alignment experiments.
 
 
 ## Citation

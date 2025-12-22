@@ -13,4 +13,4 @@ Rows with empty physician label fields indicate samples that were not reviewed b
 | `y_orig` | $\hat{y}_{\textsf{original}}$ |
 | `y_new` | $\hat{y}_{\textsf{new}}$ |
 | `y* (Physician label)` | Physician label (if non-empty) |
-| `y_final` | MedCalc-Bench test labels we propose, after incorporating physicians' feedback |
+| `y_final` | Maintained test labels after incorporating physicians' feedback (case study output) |
