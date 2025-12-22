@@ -22,7 +22,7 @@ data/
 └── phase2/                           # Extensive relabeling experiments
     ├── train_relabel_pipeline_raw.jsonl # New labels produced by another agentic LLM pipeline
     ├── test_relabel_pipeline_raw.jsonl  # New labels produced by another agentic LLM pipeline
-    └── phase2_MDs_blind_eval/           # Parsed new test labels & licensed physicians' single-blind score evaluations of 50 sampled labels
+    └── phase2_MDs_blind_eval/           # Parsed new test labels & licensed physicians' indepedent computations of 50 sampled (C,q) instances in MedCalc's test set
         ├── y_new_and_sampled_MD_evals.xlsx    # juxtaposed old new labels, new labels, and sampled, independent physician labels
         └── y_final_MD_evals_incorporated.xlsx # Final test set labels, incorporating physician feedback
 ```
