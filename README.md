@@ -44,7 +44,15 @@ Independent recomputation of train and test sets using an agentic LLM pipeline (
 ## Citation
 
 ```bibtex
-# Citation coming soon
+@misc{scalably2025,
+  title         = {Scalably Enhancing the Clinical Validity of a Task Benchmark with Physician Oversight},
+  author        = {Ye, Junze and Tawfik, Daniel and Goodell, Alex J. and Kotha, Nikhil V. and Buyyounouski, Mark K. and Bayati, Mohsen},
+  year          = {2025},
+  eprint        = {2512.19691v1},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2512.19691v1}
+}
 ```
 
 ## License
