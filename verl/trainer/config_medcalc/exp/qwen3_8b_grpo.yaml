@@ -1,0 +1,328 @@
+# @package _global_
+
+# Do not delete the above comment - it is used by Hydra to merge the config with base config.
+# Indentation level is respected for nested fields.
+
+trainer:
+  total_epochs: 3  # Number of epochs in training
+  balance_batch: True  # Whether to balance batch sizes across distributed workers
+  total_training_steps: null  # Total training steps (can be set explicitly or derived from epochs)
+  profile_steps: null  # The steps that will be profiled. null means no profiling. null or [1,2,5,...]
+
+  # compute resource specification
+  nnodes: 1
+  n_gpus_per_node: 8
+
+  # Logging backends to use: "console", "wandb", etc.
+  logger: [ 'wandb', 'console' ]
+  wandb_stats_sample_rate: 5.0  # GPU power monitoring interval in seconds
+  project_name: medcalc
+  experiment_name: rlvr_1turn # To be overwritten at runtime through CLI
+  rollout_data_dir: PATH/TO/YOUR/LOGS/DIR/generations/train/${trainer.experiment_name}   # Directory for logging rollout data
+  log_val_generations: 0   # Number of generations to log to wandb during validation. Set to 0 to disable (probably not needed, since the full validation set is saved to val_data_dir anyways).
+  val_before_train: True   # Whether to run validation before training begins
+  val_only: False   # Whether to run validation only
+  test_freq: 5   # Validation frequency (in training iterations)
+  validation_data_dir: PATH/TO/YOUR/LOGS/DIR/generations/val/${trainer.experiment_name}   # Directory for logging validation data; no dump if null
+  # Resume mode: "auto", "disable", or "resume_path"
+  # "auto": resume from last checkpoint if available
+  # "disable": start from scratch
+  # "resume_path": resume from a user-defined path
+  resume_mode: auto
+  save_freq: 10  # Save frequency (by iteration) for model checkpoints
+  default_local_dir: PATH/TO/YOUR/LOGS/DIR/checkpoints/${trainer.project_name}/${trainer.experiment_name}  # Default local directory for saving checkpoints
+  max_actor_ckpt_to_keep: 100   # Maximum number of actor checkpoints to keep
+  ray_wait_register_center_timeout: 300   # Timeout (in seconds) for Ray worker to wait for registration
+  device: cuda   # Device to use for training
+
+
+# configs related to ray initialization
+ray_init:
+  num_cpus: 112  # Number of CPUs for Ray. Use a fixed number instead of null when using SLURM. (original was null)
+  timeline_json_file: PATH/TO/YOUR/LOGS/DIR/Ray_logs  # Path to save Ray timeline JSON for performance profiling
+
+
+# dataset config
+data:
+  # Training set parquet. Can be a list or a single file.
+  train_files: PATH/TO/PROJECT/ROOT/data/RL/train_new_labels.parquet
+  val_files: PATH/TO/PROJECT/ROOT/data/RL/test_new_labels.parquet
+
+  # The field in the parquet dataset where the prompt is located. Default is 'prompt'.
+  prompt_key: prompt   # The field in the parquet dataset where the prompt is located. Default is 'prompt'.
+  reward_fn_key: data_source   # The field used to select the reward function (if using different ones per example). NOTE: figure out how this works.
+  max_prompt_length: 3000    # Maximum prompt length. All prompts will be left-padded to this length. An error will be reported if the length is too long.
+  max_response_length: 1600  # Maximum response length. Rollout in RL algorithms (e.g. PPO) generates up to this length.
+  train_batch_size: 128    # Batch size sampled for one training iteration of different RL algorithms.
+  val_batch_size: null    # (Deprecated according to doc) Batch size used during validation. Set to null, so that the entire validation set is scheduled internally by the inference engine.
+  validation_shuffle: False    # Whether to shuffle the validation set.
+  filter_overlong_prompts: True    # Whether to filter overlong prompts.
+
+  # Optional: specify a custom dataset class path and name if overriding default loading behavior.
+  custom_cls:
+    path: null    # The path to the file containing your customized dataset class. If not specified, pre-implemented dataset will be used.
+    name: null    # The name of the dataset class within the specified file.
+
+# config for actor, rollout and reference model
+actor_rollout_ref:
+  model:
+    # Huggingface LLM model path. This can be either local path or HDFS path.
+    path: PATH/TO/LOCAL/QWEN/CKPT
+    enable_gradient_checkpointing: true
+    # Whether to remove padding tokens in inputs during training
+    use_remove_padding: true
+
+  # actor configs
+  actor:
+    # fsdp, fsdp2 or megatron. fsdp backend used here.
+    strategy: fsdp
+
+    fsdp_config:
+      model_dtype: bfloat16  # override fp32 (system default, if not specified)
+    # Split each sample into sub-batches of this size for PPO
+    ppo_mini_batch_size: 256
+    # Local per-GPU micro batch size
+    ppo_micro_batch_size_per_gpu: 2
+    # Whether to automatically adjust batch size at runtime
+    use_dynamic_bsz: true
+    # Max tokens per GPU in one PPO batch; affects gradient accumulation
+    # Typically it should be: n * ${data.max_prompt_length} + ${data.max_response_length}
+    ppo_max_token_len_per_gpu: 24000
+
+    grad_clip: 1.0  # Gradient clipping for actor updates
+    clip_ratio: 0.2  # PPO clip ratio (the epsilon term -> clip(prob_ratio, 1-clip_ratio, 1+clip_ratio))
+    clip_ratio_low: 0.2  # Lower bound for asymmetric clipping (used in dual-clip PPO)
+    clip_ratio_high: 0.2  # Upper bound for asymmetric clipping (used in dual-clip PPO)
+    clip_ratio_c: 3.0  # Constant C in Dual-clip PPO; clips when advantage < -C
+
+    # policy loss config
+    policy_loss:
+      # Loss function mode: vanilla / clip-cov / kl-cov from https://arxiv.org/abs/2505.22617
+      # Removed clip-cov & kl-cov hyperparameters for now - feel free to add later
+      loss_mode: "vanilla"
+      # KL divergence penalty coefficient
+      ppo_kl_coef: 0.1
+
+    # Loss aggregation mode: "token-mean", "seq-mean-token-sum", or "seq-mean-token-mean"
+    loss_agg_mode: token-mean
+    # Entropy regularization coefficient in PPO loss
+    entropy_coeff: 0
+    # Whether to use KL loss instead of KL reward penalty. True for GRPO
+    use_kl_loss: True
+    # KL loss coefficient when use_kl_loss is enabled. For GRPO
+    kl_loss_coef: 0.001
+    # Type of KL divergence loss. Options: "kl"(k1), "abs", "mse"(k2), "low_var_kl"(k3), "full"
+    kl_loss_type: low_var_kl
+
+    # calculate entropy with chunking to reduce memory peak
+    entropy_from_logits_with_chunking: False
+    # recompute entropy
+    entropy_checkpointing: False
+
+    # checkpoint configs
+    checkpoint:
+      # What to include in saved checkpoints
+      # with 'hf_model' you can save whole model as hf format, now only use sharded model checkpoint to save space
+      save_contents: ['model']  # 'optimizer', 'extra'
+      # For more flexibility, you can specify the contents to load from the checkpoint.
+      load_contents: ${actor_rollout_ref.actor.checkpoint.save_contents}
+
+    # optimizer configs
+    optim:
+      lr: 1e-5
+      # Warmup steps; negative value delegates to lr_warmup_steps_ratio
+      lr_warmup_steps: -1
+      # Warmup steps ratio (used if lr_warmup_steps is negative)
+      lr_warmup_steps_ratio: 0.0
+      # Minimum LR ratio for cosine schedule
+      min_lr_ratio: 0.0
+      # Number of cosine cycles in LR schedule
+      num_cycles: 0.5
+      # LR warmup style: "constant" or "cosine"
+      warmup_style: constant
+      # Total training steps (must be overridden at runtime)
+      total_training_steps: -1
+      # Weight decay
+      weight_decay: 0.01
+
+    # configs for FSDP
+    # omitted for now - can pull back from `ppo_trainer.yaml`
+    # profiler configs
+    # omitted for now - can pull back from `ppo_trainer.yaml`
+
+
+  # Reference model config.
+  # Reference model will be enabled when actor.use_kl_loss or/and algorithm.use_kl_in_reward is/are True.
+  ref:
+    # actor_rollout_ref.ref: FSDP config same as actor. For models larger than 7B, it’s recommended to turn on offload for ref by default
+    strategy: fsdp
+    # config for FSDP strategy
+    fsdp_config:
+      # whether to offload parameters in FSDP
+      param_offload: True
+      # whether to perform reshard after model forward to save memory.
+      # only for fsdp2, [True, False, int between 1 and fsdp_size]
+      reshard_after_forward: True
+      # Only for FSDP1: FSDP1 configuration, prefetch the next forward-pass all-gather
+      # before the current forward computation.
+      forward_prefetch: False
+      # the wrap policy for FSDP model
+      wrap_policy:
+        # minimum number of params in a wrapped module
+        min_num_params: 0
+
+    # The batch size for one forward pass in the computation of log_prob. Local batch size per GPU.
+    log_prob_micro_batch_size_per_gpu: ${actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu}
+    # enable dynamic batch size (sequence packing) for log_prob computation
+    log_prob_use_dynamic_bsz: ${actor_rollout_ref.actor.use_dynamic_bsz}
+    # the max token length per GPU
+    log_prob_max_token_len_per_gpu: ${actor_rollout_ref.actor.ppo_max_token_len_per_gpu}
+    # sequence parallel size
+    ulysses_sequence_parallel_size: ${actor_rollout_ref.actor.ulysses_sequence_parallel_size}
+    # calculate entropy with chunking to reduce memory peak
+    entropy_from_logits_with_chunking: False
+    # recompute entropy
+    entropy_checkpointing: False
+
+
+  # Rollout model config.
+  rollout:
+    # number of responses (i.e. num sample times). > 1 for grpo -> tony note: probably means GRPO group size
+    n: 8
+    # actor_rollout_ref.rollout.name: hf/vllm/sglang.
+    name: vllm
+    # sync: LLM, async: AsyncLLM
+    mode: sync
+    # Sampling temperature for rollout.
+    temperature: 1.0
+    # Top-k sampling parameter. -1 for vLLM rollout, 0 for HF rollout.
+    top_k: -1
+    # Top-p sampling parameter. Default 1.0.
+    top_p: 1
+
+    # for vllm rollout
+    # Rollout model parameters type. Align with actor model's FSDP/Megatron type.
+    dtype: bfloat16
+    gpu_memory_utilization: 0.45 # Fraction of GPU memory used by vLLM/SGLang for KV cache. - because colocation with actor, we need to keep this low
+
+    # Which loader to use for rollout model weights: dummy_dtensor, hf, megatron, etc.
+    # safetensors (for huge model, and set use_shm=True); dummy_dtensor: randomly init model weight
+    load_format: dummy_dtensor
+    # for huge model, layered summon can save memory (prevent OOM) but make it slower
+    layered_summon: False
+    # TP size for rollout. Only effective for vLLM.
+    tensor_model_parallel_size: 2
+
+    # max number of tokens in a batch
+    max_num_batched_tokens: 16000
+    # max length for rollout
+    max_model_len: null
+    # max length of sequences
+    max_num_seqs: 1024
+
+    # disable logging statistics
+    disable_log_stats: True
+    # may get higher throughput when set to True. When activated, Please increase max_num_batched_tokens or decrease max_model_len.
+    enable_chunked_prefill: True
+
+    # Extra inference engine arguments (vllm, sglang).
+    engine_kwargs:
+      # for vllm
+      vllm:
+        # Swap space (in GB) used by inference engine. null uses default (e.g., 4 GB).
+        swap_space: null
+        # Whether to disable the preprocessor cache for multimodel models.
+        disable_mm_preprocessor_cache: False
+      # for sglang
+      sglang:
+        attention_backend: null
+
+    # Sampling parameters used during validation.
+    val_kwargs:
+      # sampling parameters for validation
+      # Top-k sampling parameter. -1 for vLLM rollout, 0 for HF rollout.
+      top_k: -1
+      top_p: 1.0
+      temperature: 1
+      n: 1  # whether to repeat n times for validation -> for examining policy distribution consistency
+      # Whether to sample during training rollout. False uses greedy sampling.
+      do_sample: True
+
+    # Multi-turn interaction config for tools or chat.
+    # Omitted for now - consider adding back later.
+
+    # profiler configs
+    # omitted for now - see base yaml
+
+# configs for the critic
+# critic:
+#   ...
+# removed all critic configs - not needed for GRPO
+
+
+# configs for the reward model
+reward_model:
+
+  # Whether to enable reward model. If False, we compute the reward only with the user-defined reward functions.
+  # In GSM8K and Math examples, we disable reward model.
+  # For RLHF alignment example using full_hh_rlhf, we utilize reward model to assess the responses.
+  # If False, the following parameters are not effective
+  enable: False
+
+  # model config for LLM-based reward scoring
+  # removed for now, could add back later
+
+  # Local per-GPU micro batch size
+  micro_batch_size_per_gpu: null
+  # Maximum sequence length to process for scoring
+  max_length: null
+  # Sequence parallelism size for Ulysses-style model parallelism
+  ulysses_sequence_parallel_size: 1
+  # Whether to dynamically adjust batch size at runtime
+  use_dynamic_bsz: ${critic.use_dynamic_bsz}
+  # Maximum number of tokens per GPU in one forward pass
+  forward_max_token_len_per_gpu: ${critic.forward_max_token_len_per_gpu}
+
+  # Reward Manager. This defines the mechanism of computing rule-based reward and handling different reward sources.
+  # Default is naive. If all verification functions are multiprocessing-safe,
+  # the reward manager can be set to prime for parallel verification.
+  reward_manager: naive # left as naive for now, but I think we could use batch for this - Tony check this
+  # Whether to launch custom reward function asynchronously during log_prob
+  launch_reward_fn_async: False
+  # Cloud/local sandbox fusion configuration for custom reward logic
+  sandbox_fusion:
+    # Cloud/local function URL for sandbox execution
+    url: null
+    # Max concurrent requests allowed to sandbox
+    max_concurrent: 64
+
+  # profiler configs
+  # removed for now, could add later
+  # profiler:......
+
+
+# custom reward function definition
+custom_reward_function:
+  # The path to the file containing your customized reward function.
+  # If not specified, pre-implemented reward functions will be used.
+  path: PATH/TO/PROJECT/ROOT/verl/utils/reward_score/medcalc.py
+  # The name of the reward function within the specified file. Default is 'compute_score'.
+  name: compute_score
+
+
+# config for the algorithm
+algorithm:
+  # Discount factor for future rewards
+  gamma: 1.0
+  # Trade-off between bias and variance in the GAE estimator
+  # lam: 1.0
+  # Advantage estimator type: "gae", "grpo", "reinforce_plus_plus", etc.
+  adv_estimator: grpo
+  # Whether to normalize advantages by std (specific to GRPO) -> turned to false, to mirror CS336 lesson
+  norm_adv_by_std_in_grpo: False
+
+  # additional KL calculation configs ignored
+  # ...
+
+debug:
+  print_full_config: false # whether to print full Hydra config at startup
