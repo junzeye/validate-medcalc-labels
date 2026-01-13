@@ -12,18 +12,21 @@ This repository contains the data artifacts and code from our case study on scal
 
 We do not position our relabeling as a replacement for the benchmark; instead, we use MedCalc-Bench as a case study to argue that LLM-assisted benchmarks in safety-critical domains must be treated as _living documents_ with transparent, repeatable, and systematic stewardship protocols. Our results show that a non-trivial fraction of original labels diverge from physician judgment, and that training on maintained labels yields meaningful performance differences in downstream RL alignment.
 
-**Note:** Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent and standardized revision methodology, rather than to claim priority over any particular correction.
+**Note:** Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025. For reproducibility, we include the original v1.0 instances and labels examined in our Phase 1 and Phase 2 studies as `original_test_labels.csv` and `original_train_labels.csv` in the respective data folders. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent and standardized revision methodology, rather than to claim priority over any particular correction.
 
 ## Repository Structure
 
 ```
 data/
 ├── phase1/                           # Phase 1: Metadata-informed audit
+│   ├── original_test_labels.csv      # Original v1.0 test instances and labels
 │   ├── test_audit_pipeline_raw.jsonl # Audits produced by agentic LLM pipeline
 │   └── phase1_MD_check/             
 │       └── test_spotcheck.xlsx       # Physician spot-check annotations
 │
 ├── phase2/                           # Phase 2: Independent recomputation
+│   ├── original_test_labels.csv      # Original v1.0 test instances and labels
+│   ├── original_train_labels.csv     # Original v1.0 train instances and labels
 │   ├── train_y_new_pipeline_raw.jsonl   # Recomputed labels (train set)
 │   └── test_y_new_pipeline_raw.jsonl    # Recomputed labels (test set)
 │
