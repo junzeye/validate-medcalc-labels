@@ -1,16 +1,13 @@
 # Validating MedCalc-Bench Labels
 
-GitHub repository for the paper **"Scalably Enhancing the Clinical Validity of a Task Benchmark with Physician Oversight"** (arXiv:2512.19691).
-
-> **This repository is actively being updated.** Additional details on the audit and recomputation workflows will be added in the next update.
-
-> **Note on presentation:** This code repository organizes the stewardship process into three phases for clarity; it is a refinement of the presentation in the ArXiv preprint (v1), which presented a two-phase structure. Here, the physician validation study (originally part of Phase 2 in the preprint) is presented separately as Phase 3. The underlying experiments and results are unchanged.
+GitHub repository for the paper **"Scalable Stewardship of an LLM-Assisted
+Clinical Benchmark with Physician Oversight"** ([arXiv:2512.19691v2](https://arxiv.org/abs/2512.19691v2)).
 
 ## Overview
 
 This repository contains the data artifacts and code from our case study on scalable benchmark stewardship using [MedCalc-Bench](https://openreview.net/pdf?id=VXohja0vrQ), a widely used clinical [benchmark](https://web.archive.org/web/20250905181753/https://github.com/ncbi-nlp/MedCalc-Bench) for evaluating LLMs on clinical score computation. We demonstrate a physician-in-the-loop stewardship pipeline that combines agentic LLM verifiers with automated triage to concentrate scarce clinician attention on contentious instances.
 
-We do not position our relabeling as a replacement for the benchmark; instead, we use MedCalc-Bench as a case study to argue that LLM-assisted benchmarks in safety-critical domains must be treated as _living documents_ with transparent, repeatable, and systematic stewardship protocols. Our results show that a non-trivial fraction of original labels diverge from physician judgment, and that training on maintained labels yields meaningful performance differences in downstream RL alignment.
+We do not position our relabeling as a replacement for the benchmark; instead, we use MedCalc-Bench as a case study to argue that LLM-assisted benchmarks in safety-critical domains must be treated with systematic and physician-in-the-loop stewardship protocols. Our results show that a non-trivial fraction of original labels diverge from physician judgment, and that training on maintained labels yields meaningful performance differences in downstream RL alignment.
 
 **Note:** Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025. For reproducibility, we include the original v1.0 instances and labels examined in our Phase 1 and Phase 2 studies as `original_test_labels.csv` and `original_train_labels.csv` in the respective data folders. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent and standardized revision methodology, rather than to claim priority over any particular correction.
 
@@ -114,13 +111,13 @@ The `verl/` directory contains our modified version of the [verl](https://github
 
 ```bibtex
 @misc{scalably2025,
-  title         = {Scalably Enhancing the Clinical Validity of a Task Benchmark with Physician Oversight},
+  title         = {Scalable Stewardship of an LLM-Assisted Clinical Benchmark with Physician Oversight},
   author        = {Ye, Junze and Tawfik, Daniel and Goodell, Alex J. and Kotha, Nikhil V. and Buyyounouski, Mark K. and Bayati, Mohsen},
   year          = {2025},
-  eprint        = {2512.19691v1},
+  eprint        = {2512.19691v2},
   archivePrefix = {arXiv},
   primaryClass  = {cs.AI},
-  url           = {https://arxiv.org/abs/2512.19691v1}
+  url           = {https://arxiv.org/abs/2512.19691v2}
 }
 ```
 
