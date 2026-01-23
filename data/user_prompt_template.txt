@@ -1,0 +1,5 @@
+Patient Note: {patient_note}
+
+Question: {question}
+
+Response:
