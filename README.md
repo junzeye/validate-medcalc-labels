@@ -1,18 +1,34 @@
-# Improving MedCalc-Bench Labels with Physicians' Oversight
+# Improving MedCalc-Bench Labels with Physician Oversight
 
-## Overview
+Code and data from our physicians-in-the-loop curation of new ground truth labels for [MedCalc-Bench](https://openreview.net/forum?id=VXohja0vrQ#discussion), a benchmark (NeurIPS 2024 Oral & included in [MedHELM](https://crfm.stanford.edu/helm/medhelm/latest/#/leaderboard/medcalc_bench)) for evaluating LLMs on medical score computation.
 
-Code and data from our physician-in-the-loop curation of new ground truth labels for [MedCalc-Bench](https://openreview.net/forum?id=VXohja0vrQ#discussion), a benchmark (NeurIPS 2024 Oral & included in [MedHELM](https://crfm.stanford.edu/helm/medhelm/latest/#/leaderboard/medcalc_bench)) for evaluating LLMs on medical score computation. Our stewardship / label curation pipeline combines agentic LLM verifiers with automated triage to concentrate scarce physician attention on labeling contentious instances. Four board-licensed physicians from three specialties at Stanford Medicine provided valuable annotations and oversight in this work. We identify that a non-trivial fraction of original labels diverge from physician judgment, produce a set of more physician-aligned labels, and show that training on corrected labels yields meaningful performance differences in downstream RL alignment.
+### 💡 Key contributions
+
+- **Hybrid stewardship pipeline**: Agentic LLM verifiers + automated triage concentrate scarce physician attention on the most contentious instances.
+- **Physician oversight**: Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication.
+- **Label divergence**: A non-trivial fraction of the original MedCalc-Bench v1.0 labels diverge from physician judgment.
+- **Corrected labels**: We release a set of better physician-aligned labels as a drop-in replacement for the original benchmark.
+- **Downstream impact**: Training on corrected labels yields meaningful performance differences in downstream model alignment via RL (GRPO).
 
 <div align="center">
-  <img src="media/llm_comparison.png" alt="Comparison of Frontier LLMs on MedCalc-Bench with our physician-produced labels" width="75%">
+  <br>
+  <img src="media/llm_comparison_50ex.png" alt="Comparison of Frontier LLMs on MedCalc-Bench with our physician-produced labels" width="85%">
   <br>
 </div>
 <div align="left">
-  <sub><b>Figure 1.</b> Answer accuracy of frontier agentic LLMs on a MedCalc-Bench v1.0 test subset of 50 instances, compared against reference labels independently produced by Stanford physicians (the filtered view in `data/phase3/y_new_and_sampled_MD_evals.xlsx`). All model responses were obtained via API calls between February 20-23, 2026 with <strong>server-side tool use (web search + Python code execution)</strong>, reasoning effort set to "high", max output tokens capped at 64k, and the same system prompt template. Error bars represent 95% confidence intervals.</sub>
+  <sub><b>Figure 1.</b> Answer accuracy of frontier LLMs on 50 MedCalc-Bench v1.0 test instances manually labeled by Stanford physicians. All LLM responses were obtained by API calls between February 20-23, 2026 with <strong>server-side tool use (web search + Python code execution)</strong>, reasoning effort set to "high", and the same system prompt template. Error bars are 95% confidence intervals.</sub>
 </div>
 
-## Quick evals on our curated labels
+<div align="center">
+  <br>
+  <img src="media/llm_comparison_full.png" alt="Frontier LLM accuracy on all 887 corrected MedCalc-Bench labels" width="85%">
+  <br>
+</div>
+<div align="left">
+  <sub><b>Figure 2.</b> Same evaluation setup as Figure 1, scored against 887 <strong>full-pipeline labels</strong>: the previous 50 physician labels plus 837 labels produced by our stewardship pipeline. Error bars are 95% confidence intervals.</sub>
+</div>
+
+## 🚀 Quick evals on our curated labels
 
 For immediate "plug-and-play" evaluation, use
 **`data/medcalc_v1_corrected.csv`** and our system prompt template (`data/system_prompt.txt`), which tells the LLM to handle abstention by outputting `N/A` when the patient note lacks sufficient information to answer the question. A user prompt template is also available in the same directory.
@@ -22,7 +38,7 @@ The csv file uses the same column schema as the original MedCalc-Bench v1.0, wit
 **Note:** This corrected dataset includes **887 instances** (a precision-focused subset of the original 1,047). We heavily prioritize precision and only release corrections where our system (validated by physicians) has high confidence. If your evaluation requires the full 1,047 instances, you can can merge this file with the original v1.0 labels (available at `data/phase1/original_test_labels.csv`) using the `Unique ID` column (matches `Row Number` in original) to identify and fill in the missing instances.
 
 
-## Repository Structure
+## 🗂️ Repository Structure
 
 ```
 data/
@@ -56,7 +72,7 @@ scripts/
 verl/                                 # Modified verl framework for RL experiments
 ```
 
-### Reproducing the RL Alignment Experiment
+### 🔬 Reproducing the RL Alignment Experiment
 
 **Hardware requirements:** 8× H100 GPUs or equivalent (80GB each)
 
@@ -79,10 +95,10 @@ The script runs two independent training jobs (combined in one script for conven
 Both models are evaluated on the same held-out test set, with accuracy graded against recomputed labels.
 
 
-## Dataset Versioning
+## 📋 Dataset Versioning
 Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025. For reproducibility, we include the original v1.0 instances and labels examined in our Phase 1 and Phase 2 studies as `original_test_labels.csv` and `original_train_labels.csv` in the respective data folders. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent and standardized revision methodology, rather than to claim priority over any particular correction.
 
-## Citation
+## 📝 Citation
 
 ```bibtex
 @misc{scalably2025,
@@ -96,6 +112,6 @@ Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCal
 }
 ```
 
-## License
+## ⚖️ License
 
 See [LICENSE](LICENSE) for details.
