@@ -6,7 +6,7 @@ Code and data from our physicians-in-the-loop curation of new ground truth label
 
 - **Hybrid stewardship pipeline**: Agentic LLM verifiers + automated triage concentrate scarce physician attention on the most contentious instances.
 - **Physician oversight**: Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication.
-- **Label divergence**: A non-trivial fraction of the original MedCalc-Bench v1.0 labels diverge from physician judgment.
+- **Label divergence**: A non-trivial fraction (>25%) of the original MedCalc-Bench v1.0 labels diverge from physician judgment.
 - **Corrected labels**: We release a set of better physician-aligned labels as a drop-in replacement for the original benchmark.
 - **Downstream impact**: Training on corrected labels yields meaningful performance differences in downstream model alignment via RL (GRPO).
 
@@ -42,6 +42,9 @@ The csv file uses the same column schema as the original MedCalc-Bench v1.0, wit
 
 ```
 data/
+├── tool_use_prompt_template.txt      # Prompt template for tool-using LLMs (web search + code)
+├── user_prompt_template.txt          # User template for non-tool-using LLMs
+├── system_prompt.txt                 # System prompt template for non-tool-using LLMs
 ├── medcalc_v1_corrected.csv          # **Recommended**: Final physician-adjudicated labels (v1.0 corrected)
 ├── phase1/                           # Phase 1: Metadata-informed audit
 │   ├── original_test_labels.csv      # Original v1.0 test instances and labels

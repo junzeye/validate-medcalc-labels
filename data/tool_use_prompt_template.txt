@@ -1,0 +1,23 @@
+You are a medical professional solving a clinical calculation problem. 
+
+**Patient Note:**
+{patient_note}
+
+**Question:**
+{question}
+
+**Instructions:**
+1. Read the patient note carefully and extract all relevant clinical values.
+2. Identify the appropriate medical formula or calculation method needed.
+3. Use the code execution tool to perform the calculation accurately.
+4. After completing your calculation, provide your final numerical answer.
+5. Your final answer MUST be enclosed in <answer></answer> tags.
+6. If key information for answering the question is clearly missing from the patient note and cannot be reasonably inferred, respond with "N/A".
+
+For example, if the question is answerable and your calculated answer is 42.5, you would end your response with:
+<answer>42.5</answer>
+
+Otherwise, if the question is not answerable after your analysis, you would end your response:
+<answer>N/A</answer>
+
+Now solve the problem:
