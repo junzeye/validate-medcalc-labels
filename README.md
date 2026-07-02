@@ -1,14 +1,14 @@
 # Improving MedCalc-Bench Labels with Physician Oversight
 
-Code and data from our physicians-in-the-loop curation of new ground truth labels for [MedCalc-Bench](https://openreview.net/forum?id=VXohja0vrQ#discussion), a benchmark (NeurIPS 2024 Oral & included in [MedHELM](https://crfm.stanford.edu/helm/medhelm/latest/#/leaderboard/medcalc_bench)) for evaluating LLMs on medical score computation.
+Code and data from our physician-in-the-loop cleanup of the ground-truth labels of [MedCalc-Bench](https://openreview.net/forum?id=VXohja0vrQ#discussion) (NeurIPS 2024 Oral; featured in [MedHELM](https://crfm.stanford.edu/helm/medhelm/latest/#/leaderboard/medcalc_bench)), a widely used benchmark for LLM medical score computation.
 
-### 💡 Key contributions
+**TL;DR:** More than 25% of the original MedCalc-Bench v1.0 test labels diverge from physician judgment. We release physician-validated corrected labels as a drop-in replacement (`data/medcalc_v1_corrected.csv`), produced by a three-phase stewardship pipeline that uses agentic LLM verifiers and automated triage to concentrate scarce physician attention on the most contentious instances. Label quality matters downstream: re-evaluating frontier LLMs against the corrected labels changes measured accuracy, and RL training (GRPO) with corrected vs. original reward labels produces measurably different models.
 
-- **Hybrid stewardship pipeline**: Agentic LLM verifiers + automated triage concentrate scarce physician attention on the most contentious instances.
-- **Physician oversight**: Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication.
-- **Label divergence**: A non-trivial fraction (>25%) of the original MedCalc-Bench v1.0 labels diverge from physician judgment.
-- **Corrected labels**: We release a set of better physician-aligned labels as a drop-in replacement for the original benchmark.
-- **Downstream impact**: Training on corrected labels yields meaningful performance differences in downstream model alignment via RL (GRPO).
+## 🚀 Quick start: evaluate on the corrected labels
+
+- Point your existing MedCalc-Bench v1.0 harness at **`data/medcalc_v1_corrected.csv`**. Column names match v1.0 (with `Row Number` renamed to `Unique ID`), keeping the subset needed for evaluation: `Unique ID`, `Calculator Name`, `Question`, `Patient Note`, `Ground Truth Answer`, `Lower Limit`, `Upper Limit`.
+- Use `data/system_prompt.txt` and `data/user_prompt_template.txt` (or `data/tool_use_prompt_template.txt` for tool-using LLMs). The prompts instruct the model to output `N/A` when the patient note lacks sufficient information — some corrected labels are abstentions.
+- The file contains **887 of the original 1,047 test instances**: we prioritize precision and only release labels where our physician-validated pipeline has high confidence. If you need all 1,047, merge with the originals (`data/phase1/original_test_labels.csv`) on `Unique ID` (= `Row Number` in v1.0).
 
 <div align="center">
   <br>
@@ -16,7 +16,7 @@ Code and data from our physicians-in-the-loop curation of new ground truth label
   <br>
 </div>
 <div align="left">
-  <sub><b>Figure 1.</b> Answer accuracy of frontier LLMs on 50 MedCalc-Bench v1.0 test instances manually labeled by Stanford physicians. All LLM responses were obtained by API calls between February 20-23, 2026 with <strong>server-side tool use (web search + Python code execution)</strong>, reasoning effort set to "high", and the same system prompt template. Error bars are 95% confidence intervals.</sub>
+  <sub><b>Figure 1.</b> Frontier LLM accuracy on the 50 test instances labeled directly by Stanford physicians. Responses collected via API (February 20–23, 2026) with server-side tool use (web search + Python), "high" reasoning effort, and a shared prompt template. Error bars are 95% CIs.</sub>
 </div>
 
 <div align="center">
@@ -25,81 +25,52 @@ Code and data from our physicians-in-the-loop curation of new ground truth label
   <br>
 </div>
 <div align="left">
-  <sub><b>Figure 2.</b> Same evaluation setup as Figure 1, scored against 887 <strong>full-pipeline labels</strong>: the previous 50 physician labels plus 837 labels produced by our stewardship pipeline. Error bars are 95% confidence intervals.</sub>
+  <sub><b>Figure 2.</b> Same setup as Figure 1, scored against all 887 corrected labels (the 50 physician labels plus 837 pipeline-produced labels). Error bars are 95% CIs.</sub>
 </div>
 
-## 🚀 Quick evals on our curated labels
+## 🔍 How the labels were produced
 
-For immediate "plug-and-play" evaluation, use
-**`data/medcalc_v1_corrected.csv`** and our system prompt template (`data/system_prompt.txt`), which tells the LLM to handle abstention by outputting `N/A` when the patient note lacks sufficient information to answer the question. A user prompt template is also available in the same directory.
+Three phases, each documented with raw data in `data/` (see `data/readme.MD`):
 
-The csv file uses the same column schema as the original MedCalc-Bench v1.0, with the exception of the `Row Number` column, which has been renamed to `Unique ID` for clarity. It is designed to be a "drop-in" replacement: if you have an existing evaluation harness for MedCalc-Bench v1.0, you can simply point it to this file to evaluate against our **high-confidence corrected labels**, which were generated by our hybrid physician-oversight system.
+1. **Audit** (`data/phase1/`) — agentic LLM verifiers review each original label and its derivation metadata, flagging clinically suspect instances.
+2. **Independent recomputation** (`data/phase2/`) — a separate agentic pipeline recomputes each score from the patient note and calculator question alone (no access to original labels, avoiding anchoring); supermajority voting across independent runs yields high-confidence labels.
+3. **Physician validation** (`data/phase3/`) — physicians independently recompute the most contentious instances, validating both label sets and producing the final maintained labels. Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication. Reproduce the validation metrics with `python scripts/reproduce_phase3_metrics.py`.
 
-**Note:** This corrected dataset includes **887 instances** (a precision-focused subset of the original 1,047). We heavily prioritize precision and only release corrections where our system (validated by physicians) has high confidence. If your evaluation requires the full 1,047 instances, you can can merge this file with the original v1.0 labels (available at `data/phase1/original_test_labels.csv`) using the `Unique ID` column (matches `Row Number` in original) to identify and fill in the missing instances.
-
-
-## 🗂️ Repository Structure
+## 🗂️ Repository structure
 
 ```
 data/
-├── tool_use_prompt_template.txt      # Prompt template for tool-using LLMs (web search + code)
-├── user_prompt_template.txt          # User template for non-tool-using LLMs
-├── system_prompt.txt                 # System prompt template for non-tool-using LLMs
-├── medcalc_v1_corrected.csv          # **Recommended**: Final physician-adjudicated labels (v1.0 corrected)
-├── phase1/                           # Phase 1: Metadata-informed audit
-│   ├── original_test_labels.csv      # Original v1.0 test instances and labels
-│   ├── test_audit_pipeline_raw.jsonl # Audits produced by agentic LLM pipeline
-│   └── phase1_MD_check/             
-│       └── test_spotcheck.xlsx       # Physician spot-check annotations
-│
-├── phase2/                           # Phase 2: Independent recomputation
-│   ├── original_test_labels.csv      # Original v1.0 test instances and labels
-│   ├── original_train_labels.csv     # Original v1.0 train instances and labels
-│   ├── train_y_new_pipeline_raw.jsonl   # Recomputed labels (train set)
-│   └── test_y_new_pipeline_raw.jsonl    # Recomputed labels (test set)
-│
-├── phase3/                           # Phase 3: Physician validations
-│   ├── y_new_and_sampled_MD_evals.xlsx    # Original labels, recomputed labels, and physician labels
-│   └── y_final_MD_evals_incorporated.xlsx # Final updated test labels incorporating physician feedback
-│
-└── RL/                               # Controlled RL experiment data
-    ├── train_new_labels.parquet      # Training set with recomputed labels
-    ├── train_original_labels.parquet # Training set with original labels
-    ├── test_new_labels.parquet       # Test set with recomputed labels
-    └── uniform_system_prompt.txt     # System prompt used for RL training
+├── medcalc_v1_corrected.csv   # Recommended: final corrected test labels (drop-in for v1.0)
+├── *.txt                      # System / user / tool-use prompt templates
+├── phase1/                    # Audit: original labels + raw pipeline audits + MD spot-checks
+├── phase2/                    # Recomputation: original labels + raw recomputed labels (train & test)
+├── phase3/                    # Physician validation: MD labels + final adjudicated labels
+└── RL/                        # Controlled RL experiment data (parquet) + training system prompt
 
 scripts/
-├── reproduce_phase3_metrics.py       # Reproduces physician validation metrics
-└── run_RL_exp.sh                     # Entry point for controlled RL experiment
+├── reproduce_phase3_metrics.py   # Reproduces physician validation metrics
+└── run_RL_exp.sh                 # Entry point for the controlled RL experiment
 
-verl/                                 # Modified verl framework for RL experiments
+verl/         # Modified verl framework used for the RL experiment
+appendix_G/   # Pointer to the self-contained Appendix G reproduction repo
 ```
 
-### 🔬 Reproducing the RL Alignment Experiment
+## 🔬 Reproducing the RL experiment
 
-**Hardware requirements:** 8× H100 GPUs or equivalent (80GB each)
+Two GRPO training runs on the same Qwen3-8B base model, identical except for whether rewards are computed against original or recomputed labels; both arms are evaluated on the same held-out test set graded against recomputed labels.
 
-**Software requirements:** Install the `verl` framework (0.4.0) with vLLM inference backend as a conda environment. Refer to the [official installation guide](https://verl.readthedocs.io/en/v0.4.0/) for details. The `verl/` directory contains our modified version of the [verl](https://github.com/volcengine/verl) distributed RL training framework. Our key modifications include:
-- Custom reward function for MedCalc score matching (`verl/utils/reward_score/medcalc.py`)
-- Training configuration files for the RL experiment on Qwen3-8B (`verl/trainer/config_medcalc/`)
+- **Hardware:** 8× H100 (80GB) or equivalent.
+- **Software:** [verl 0.4.0](https://verl.readthedocs.io/en/v0.4.0/) with the vLLM backend, installed as a conda environment. The `verl/` directory is our modified copy of [verl](https://github.com/volcengine/verl); key changes are the MedCalc reward function (`verl/utils/reward_score/medcalc.py`) and the Qwen3-8B training configs (`verl/trainer/config_medcalc/`).
 
 ```bash
-# Assume you have created a conda environment as `verl_venv`.
-conda activate verl_venv
+conda activate verl_venv   # your verl environment
 chmod +x scripts/run_RL_exp.sh
-# Run the controlled RL experiment
-./scripts/run_RL_exp.sh
+./scripts/run_RL_exp.sh    # runs both training arms
 ```
 
-The script runs two independent training jobs (combined in one script for convenience):
-1. **New-label arm**: Trains with rewards computed against recomputed labels
-2. **Original-label arm**: Trains with rewards computed against original labels
+## 📋 Dataset versioning
 
-Both models are evaluated on the same held-out test set, with accuracy graded against recomputed labels.
-
-
-## 📋 Dataset Versioning
-Our work examines the [MedCalc-Bench dataset](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) released with its 2024 NeurIPS publication (now renamed to "v1.0"), which was the official version available when we ran the LLM pipeline experiments in July–August 2025. A revised ["v1.2"](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) was recently released by the benchmark creators in November 2025. For reproducibility, we include the original v1.0 instances and labels examined in our Phase 1 and Phase 2 studies as `original_test_labels.csv` and `original_train_labels.csv` in the respective data folders. Ongoing revisions by benchmark creators are expected and healthy; our results are intended to motivate transparent and standardized revision methodology, rather than to claim priority over any particular correction.
+We examine the [MedCalc-Bench release](https://github.com/ncbi-nlp/MedCalc-Bench/tree/72748cc0c454ac9d9531494e6180940de03d8470/dataset) accompanying its NeurIPS 2024 publication (now "v1.0"), the official version when we ran our pipeline in July–August 2025; the benchmark creators released [v1.2](https://huggingface.co/datasets/ncbi/MedCalc-Bench-v1.2/tree/acb17912657c084f5bf08b8fd029812f84630497) in November 2025. The exact v1.0 instances we studied are preserved as `original_*_labels.csv` in the phase folders. Ongoing revisions by benchmark creators are expected and healthy; our results are meant to motivate transparent, versioned revision methodology, not to claim priority over any particular correction.
 
 ## 📝 Citation
 
