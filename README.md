@@ -7,7 +7,7 @@ Code and data from our physician-in-the-loop cleanup of the ground-truth labels 
 ## 🚀 Quick start: evaluate on the corrected labels
 
 - Point your existing MedCalc-Bench v1.0 harness at **`data/medcalc_v1_corrected.csv`**. Column names match v1.0 (with `Row Number` renamed to `Unique ID`), keeping the subset needed for evaluation: `Unique ID`, `Calculator Name`, `Question`, `Patient Note`, `Ground Truth Answer`, `Lower Limit`, `Upper Limit`.
-- Use `data/system_prompt.txt` and `data/user_prompt_template.txt` (or `data/tool_use_prompt_template.txt` for tool-using LLMs). The prompts instruct the model to output `N/A` when the patient note lacks sufficient information — some corrected labels are abstentions.
+- Use `data/system_prompt.txt` and `data/user_prompt_template.txt` (or `data/tool_use_prompt_template.txt` for tool-using LLMs). The prompts instruct the model to output `N/A` when the patient note lacks sufficient information; some corrected labels are abstentions.
 - The file contains **887 of the original 1,047 test instances**: we prioritize precision and only release labels where our physician-validated pipeline has high confidence. If you need all 1,047, merge with the originals (`data/phase1/original_test_labels.csv`) on `Unique ID` (= `Row Number` in v1.0).
 
 <div align="center">
@@ -32,9 +32,9 @@ Code and data from our physician-in-the-loop cleanup of the ground-truth labels 
 
 Three phases, each documented with raw data in `data/` (see `data/readme.MD`):
 
-1. **Audit** (`data/phase1/`) — agentic LLM verifiers review each original label and its derivation metadata, flagging clinically suspect instances.
-2. **Independent recomputation** (`data/phase2/`) — a separate agentic pipeline recomputes each score from the patient note and calculator question alone (no access to original labels, avoiding anchoring); supermajority voting across independent runs yields high-confidence labels.
-3. **Physician validation** (`data/phase3/`) — physicians independently recompute the most contentious instances, validating both label sets and producing the final maintained labels. Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication. Reproduce the validation metrics with `python scripts/reproduce_phase3_metrics.py`.
+1. **Audit** (`data/phase1/`): agentic LLM verifiers review each original label and its derivation metadata, flagging clinically suspect instances.
+2. **Independent recomputation** (`data/phase2/`): a separate agentic pipeline recomputes each score from the patient note and calculator question alone (no access to original labels, avoiding anchoring); supermajority voting across independent runs yields high-confidence labels.
+3. **Physician validation** (`data/phase3/`): physicians independently recompute the most contentious instances, validating both label sets and producing the final maintained labels. Four board-licensed physicians from three specialties at Stanford Medicine provided annotations and adjudication. Reproduce the validation metrics with `python scripts/reproduce_phase3_metrics.py`.
 
 ## 🗂️ Repository structure
 
