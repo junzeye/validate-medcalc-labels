@@ -13,7 +13,7 @@ An agentic LLM pipeline (Gemini 2.5 Pro + knowledge grounding) reviews each orig
 
 A separate agentic pipeline (Gemini 2.5 Pro + knowledge grounding + Python tool use) recomputes each score from the case report and calculator question alone, with no access to original labels or metadata, reducing anchoring bias.
 
-- `test_y_new_pipeline_raw.jsonl`, `train_y_new_pipeline_raw.jsonl`: raw recomputed labels, collected August 2025 (>6 runs × 6,230 instances ≈ 37,380 Gemini 2.5 Pro calls).
+- `test_y_new_pipeline_raw.jsonl`, `train_y_new_pipeline_raw.jsonl`: raw recomputed labels, collected August 2025 (≥5 runs × 6,230 instances = 36,567 Gemini 2.5 Pro calls; five runs per instance were used, see `phase2/README.md`).
 - `original_test_labels.csv`, `original_train_labels.csv`: the v1.0 instances and labels examined.
 
 ## Phase 3: Physician validation (`phase3/`)
